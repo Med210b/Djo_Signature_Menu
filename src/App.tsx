@@ -143,12 +143,12 @@ export default function App() {
       {/* 3D Hero Gradient Background */}
       <Hero3DBackground />
 
-      {/* Top Bar: Pushed perfectly to the top utilizing safe-area-inset for phone notches */}
-      <div className="shrink-0 w-full z-30 sm:pt-3" style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)' }}>
+      {/* Top Bar: Pushed down 12% of screen height ONLY on phones. Resets to 0 margin on desktop (sm:mt-0) */}
+      <div className="shrink-0 w-full z-30 mt-[12vh] sm:mt-0 sm:pt-3">
         <Header onLogoClick={handleReturnToCover} />
       </div>
 
-      {/* Main Flipbook Arena: flex-1 dynamically fills space exactly between header and footer */}
+      {/* Main Flipbook Arena */}
       <main className="flex-1 flex flex-col items-center justify-center px-1 sm:px-6 relative z-10 w-full min-h-0 overflow-hidden">
         <FlipBook
           ref={flipBookRef}
@@ -166,11 +166,8 @@ export default function App() {
         />
       </main>
 
-      {/* Bottom Floating Control Bar: Pushed perfectly to the bottom using safe-area-inset for phone swipe bars */}
-      <footer 
-        className="shrink-0 w-full flex justify-center z-20 sm:pb-6" 
-        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
-      >
+      {/* Bottom Floating Control Bar: Pulled up 12% of screen height ONLY on phones. Resets to normal spacing on desktop (sm:mb-6) */}
+      <footer className="shrink-0 w-full flex justify-center z-20 mb-[12vh] sm:mb-6">
         <BookControls
           currentPage={currentPage}
           totalPages={totalPages}
