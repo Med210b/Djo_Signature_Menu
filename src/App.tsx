@@ -28,20 +28,14 @@ export default function App() {
     return generateMenuPages(categories, settings);
   }, [categories, settings]);
 
-  // Keep sound synthesizer and ambient music muted state in sync
   const handleToggleSound = () => {
     const nextMuted = !isSoundMuted;
     setIsSoundMuted(nextMuted);
     pageFlipAudio.setMuted(nextMuted);
     ambientAudio.setMuted(nextMuted);
-
-    // FORCE START on direct user click to bypass mobile autoplay blocks
-    if (!nextMuted && musicVolume > 0) {
-      ambientAudio.start();
-    }
+    if (!nextMuted && musicVolume > 0) ambientAudio.start();
   };
 
-  // Adjust ambient jazz track volume and unmute if dragged from zero
   const handleVolumeChange = (newVolume: number) => {
     setMusicVolume(newVolume);
     ambientAudio.setVolume(newVolume);
@@ -51,36 +45,16 @@ export default function App() {
         pageFlipAudio.setMuted(false);
         ambientAudio.setMuted(false);
       }
-      // FORCE START on direct user interaction
       ambientAudio.start();
     }
   };
 
-  // Start ambient audio on first user gesture
-  useEffect(() => {
-    const unlockAndStartAmbient = () => {
-      if (!isSoundMuted && musicVolume > 0) {
-        ambientAudio.start();
-      }
-      window.removeEventListener('click', unlockAndStartAmbient);
-      window.removeEventListener('pointerdown', unlockAndStartAmbient);
-      window.removeEventListener('keydown', unlockAndStartAmbient);
-      window.removeEventListener('touchstart', unlockAndStartAmbient);
-    };
-
-    // Added 'click' listener specifically for mobile browser trust policies
-    window.addEventListener('click', unlockAndStartAmbient, { passive: true, once: true });
-    window.addEventListener('pointerdown', unlockAndStartAmbient, { passive: true, once: true });
-    window.addEventListener('keydown', unlockAndStartAmbient, { passive: true, once: true });
-    window.addEventListener('touchstart', unlockAndStartAmbient, { passive: true, once: true });
-
-    return () => {
-      window.removeEventListener('click', unlockAndStartAmbient);
-      window.removeEventListener('pointerdown', unlockAndStartAmbient);
-      window.removeEventListener('keydown', unlockAndStartAmbient);
-      window.removeEventListener('touchstart', unlockAndStartAmbient);
-    };
-  }, [isSoundMuted, musicVolume]);
+  // Aggressively force audio to start on any screen touch
+  const forceStartAudio = () => {
+    if (!isSoundMuted && musicVolume > 0 && !ambientAudio.getIsPlaying()) {
+      ambientAudio.start();
+    }
+  };
 
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -93,49 +67,24 @@ export default function App() {
   };
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
+    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        document.activeElement?.tagName === 'INPUT' ||
-        document.activeElement?.tagName === 'TEXTAREA'
-      ) {
-        return;
-      }
-
-      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
-        e.preventDefault();
-        flipBookRef.current?.flipNext();
-      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-        e.preventDefault();
-        flipBookRef.current?.flipPrev();
-      } else if (e.key === 'Home') {
-        e.preventDefault();
-        setViewMode('spread');
-        flipBookRef.current?.goToCover();
-      } else if (e.key === 'End') {
-        e.preventDefault();
-        flipBookRef.current?.turnToPage(pages.length + 1);
-      } else if (e.key === 'Escape') {
-        setIsTocOpen(false);
-      } else if (e.key === '+' || e.key === '=') {
-        e.preventDefault();
-        flipBookRef.current?.zoomIn();
-      } else if (e.key === '-' || e.key === '_') {
-        e.preventDefault();
-        flipBookRef.current?.zoomOut();
-      } else if (e.key === '0') {
-        e.preventDefault();
-        flipBookRef.current?.resetZoom();
-      }
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+      forceStartAudio(); // ensure keyboard forces audio too
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); flipBookRef.current?.flipNext(); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); flipBookRef.current?.flipPrev(); }
+      else if (e.key === 'Home') { e.preventDefault(); setViewMode('spread'); flipBookRef.current?.goToCover(); }
+      else if (e.key === 'End') { e.preventDefault(); flipBookRef.current?.turnToPage(pages.length + 1); }
+      else if (e.key === 'Escape') setIsTocOpen(false);
+      else if (e.key === '+' || e.key === '=') { e.preventDefault(); flipBookRef.current?.zoomIn(); }
+      else if (e.key === '-' || e.key === '_') { e.preventDefault(); flipBookRef.current?.zoomOut(); }
+      else if (e.key === '0') { e.preventDefault(); flipBookRef.current?.resetZoom(); }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [pages.length]);
@@ -146,7 +95,12 @@ export default function App() {
   };
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-transparent text-[#e8dfd5] relative overflow-hidden selection:bg-[#c49752]/30 selection:text-[#fff4e0]">
+    <div 
+      className="h-[100dvh] flex flex-col bg-transparent text-[#e8dfd5] relative overflow-hidden selection:bg-[#c49752]/30 selection:text-[#fff4e0]"
+      onClick={forceStartAudio}
+      onTouchStart={forceStartAudio}
+      onPointerDown={forceStartAudio}
+    >
       <Hero3DBackground />
 
       <div className="shrink-0 w-full z-30 mt-[12vh] sm:mt-0 sm:pt-3">
