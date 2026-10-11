@@ -21,12 +21,9 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'spread' | 'single'>('spread');
   const [zoom, setZoom] = useState(1.0);
 
-  // Modals state
   const [isTocOpen, setIsTocOpen] = useState(false);
-
   const flipBookRef = useRef<FlipBookHandle>(null);
 
-  // Generate paginated pages from current categories & settings
   const pages = useMemo(() => {
     return generateMenuPages(categories, settings);
   }, [categories, settings]);
@@ -37,42 +34,54 @@ export default function App() {
     setIsSoundMuted(nextMuted);
     pageFlipAudio.setMuted(nextMuted);
     ambientAudio.setMuted(nextMuted);
+
+    // FORCE START on direct user click to bypass mobile autoplay blocks
+    if (!nextMuted && musicVolume > 0) {
+      ambientAudio.start();
+    }
   };
 
   // Adjust ambient jazz track volume and unmute if dragged from zero
   const handleVolumeChange = (newVolume: number) => {
     setMusicVolume(newVolume);
     ambientAudio.setVolume(newVolume);
-    if (newVolume > 0 && isSoundMuted) {
-      setIsSoundMuted(false);
-      pageFlipAudio.setMuted(false);
-      ambientAudio.setMuted(false);
+    if (newVolume > 0) {
+      if (isSoundMuted) {
+        setIsSoundMuted(false);
+        pageFlipAudio.setMuted(false);
+        ambientAudio.setMuted(false);
+      }
+      // FORCE START on direct user interaction
+      ambientAudio.start();
     }
   };
 
-  // Start ambient audio on first user gesture if not muted
+  // Start ambient audio on first user gesture
   useEffect(() => {
     const unlockAndStartAmbient = () => {
       if (!isSoundMuted && musicVolume > 0) {
         ambientAudio.start();
       }
+      window.removeEventListener('click', unlockAndStartAmbient);
       window.removeEventListener('pointerdown', unlockAndStartAmbient);
       window.removeEventListener('keydown', unlockAndStartAmbient);
       window.removeEventListener('touchstart', unlockAndStartAmbient);
     };
 
+    // Added 'click' listener specifically for mobile browser trust policies
+    window.addEventListener('click', unlockAndStartAmbient, { passive: true, once: true });
     window.addEventListener('pointerdown', unlockAndStartAmbient, { passive: true, once: true });
     window.addEventListener('keydown', unlockAndStartAmbient, { passive: true, once: true });
     window.addEventListener('touchstart', unlockAndStartAmbient, { passive: true, once: true });
 
     return () => {
+      window.removeEventListener('click', unlockAndStartAmbient);
       window.removeEventListener('pointerdown', unlockAndStartAmbient);
       window.removeEventListener('keydown', unlockAndStartAmbient);
       window.removeEventListener('touchstart', unlockAndStartAmbient);
     };
   }, [isSoundMuted, musicVolume]);
 
-  // Fullscreen toggle handler
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
@@ -91,10 +100,8 @@ export default function App() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept typing in inputs
       if (
         document.activeElement?.tagName === 'INPUT' ||
         document.activeElement?.tagName === 'TEXTAREA'
@@ -140,15 +147,12 @@ export default function App() {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-transparent text-[#e8dfd5] relative overflow-hidden selection:bg-[#c49752]/30 selection:text-[#fff4e0]">
-      {/* 3D Hero Gradient Background */}
       <Hero3DBackground />
 
-      {/* Top Bar: Pushed down 12% of screen height ONLY on phones. Resets to 0 margin on desktop (sm:mt-0) */}
       <div className="shrink-0 w-full z-30 mt-[12vh] sm:mt-0 sm:pt-3">
         <Header onLogoClick={handleReturnToCover} />
       </div>
 
-      {/* Main Flipbook Arena */}
       <main className="flex-1 flex flex-col items-center justify-center px-1 sm:px-6 relative z-10 w-full min-h-0 overflow-hidden">
         <FlipBook
           ref={flipBookRef}
@@ -166,7 +170,6 @@ export default function App() {
         />
       </main>
 
-      {/* Bottom Floating Control Bar: Pulled up 12% of screen height ONLY on phones. Resets to normal spacing on desktop (sm:mb-6) */}
       <footer className="shrink-0 w-full flex justify-center z-20 mb-[12vh] sm:mb-6">
         <BookControls
           currentPage={currentPage}
@@ -192,7 +195,6 @@ export default function App() {
         />
       </footer>
 
-      {/* Table of Contents Modal */}
       <TableOfContentsModal
         isOpen={isTocOpen}
         onClose={() => setIsTocOpen(false)}
