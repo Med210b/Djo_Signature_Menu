@@ -64,7 +64,6 @@ export class AmbientAudioEngine {
       if (AudioCtx) {
         this.ctx = new AudioCtx();
         this.masterGain = this.ctx.createGain();
-        // DIRECT ASSIGNMENT - Bypasses Android Chrome ramp bug
         this.masterGain.gain.value = this.isMuted ? 0 : this.volume * 0.45;
         this.masterGain.connect(this.ctx.destination);
 
@@ -72,11 +71,6 @@ export class AmbientAudioEngine {
         this.brushNoiseBuffer = this.createBrushNoiseBuffer(this.ctx);
       }
     }
-
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {});
-    }
-
     return this.ctx;
   }
 
@@ -85,7 +79,6 @@ export class AmbientAudioEngine {
     const sampleRate = ctx.sampleRate;
     const buffer = ctx.createBuffer(1, Math.floor(sampleRate * duration), sampleRate);
     const data = buffer.getChannelData(0);
-
     let b0 = 0, b1 = 0;
     for (let i = 0; i < data.length; i++) {
       const white = Math.random() * 2 - 1;
@@ -297,22 +290,35 @@ export class AmbientAudioEngine {
     this.schedulerTimer = window.setTimeout(this.scheduler, 80);
   };
 
-  public start() {
+  // NEW: Made this async to force execution to pause until the audio engine is strictly running
+  public async start() {
     if (this.isPlaying) return;
+    
     const ctx = this.initContext();
     if (!ctx) return;
+    
     if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
+      try {
+        await ctx.resume();
+      } catch (e) {
+        return;
+      }
     }
+    
+    // Safety check - if browser still refused to unlock, abort scheduling
+    if (ctx.state !== 'running') return;
+
     this.isPlaying = true;
+    
+    // Now currentTime is accurate because we awaited the resume
     this.nextBeatTime = ctx.currentTime + 0.1;
     this.currentBeat = 0;
 
     if (this.masterGain) {
-      // DIRECT ASSIGNMENT - Forces audio to play immediately
       this.masterGain.gain.cancelScheduledValues(ctx.currentTime);
       this.masterGain.gain.value = this.isMuted ? 0 : this.volume * 0.45;
     }
+    
     this.scheduler();
   }
 
@@ -323,7 +329,7 @@ export class AmbientAudioEngine {
       this.schedulerTimer = null;
     }
     if (this.masterGain) {
-      this.masterGain.gain.value = 0; // Direct cut
+      this.masterGain.gain.value = 0;
     }
     this.isPlaying = false;
   }
