@@ -139,15 +139,17 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent text-[#e8dfd5] relative overflow-x-hidden selection:bg-[#c49752]/30 selection:text-[#fff4e0]">
-      {/* 3D Hero Gradient Background: Volumetric Hero Lamp, Aurora Waves & Receding Showroom Stage */}
+    <div className="h-[100dvh] flex flex-col bg-transparent text-[#e8dfd5] relative overflow-hidden selection:bg-[#c49752]/30 selection:text-[#fff4e0]">
+      {/* 3D Hero Gradient Background */}
       <Hero3DBackground />
 
-      {/* Top Bar: Redesigned 3D Interactive Brand Emblem & Wordmark */}
-      <Header onLogoClick={handleReturnToCover} />
+      {/* Top Bar: Pushed perfectly to the top utilizing safe-area-inset for phone notches */}
+      <div className="shrink-0 w-full z-30 sm:pt-3" style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)' }}>
+        <Header onLogoClick={handleReturnToCover} />
+      </div>
 
-      {/* Main Flipbook Arena */}
-      <main className="grow flex flex-col items-center justify-center px-1 sm:px-6 py-1 sm:py-2 relative z-10 w-full overflow-hidden">
+      {/* Main Flipbook Arena: flex-1 dynamically fills space exactly between header and footer */}
+      <main className="flex-1 flex flex-col items-center justify-center px-1 sm:px-6 relative z-10 w-full min-h-0 overflow-hidden">
         <FlipBook
           ref={flipBookRef}
           pages={pages}
@@ -164,8 +166,11 @@ export default function App() {
         />
       </main>
 
-      {/* Bottom Floating Control Bar - Lower down on phone, spacious on web */}
-      <footer className="pb-1 sm:pb-6 pt-0 sm:pt-1 px-1 sm:px-2 flex justify-center z-20 shrink-0">
+      {/* Bottom Floating Control Bar: Pushed perfectly to the bottom using safe-area-inset for phone swipe bars */}
+      <footer 
+        className="shrink-0 w-full flex justify-center z-20 sm:pb-6" 
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
+      >
         <BookControls
           currentPage={currentPage}
           totalPages={totalPages}

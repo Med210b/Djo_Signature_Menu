@@ -56,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({ onLogoClick }) => {
   };
 
   return (
-    <header className="relative z-30 w-full pt-2 pb-1 sm:pt-3 sm:pb-2 px-3 flex justify-center items-center">
+    <header className="relative z-30 w-full pb-1 sm:pb-2 px-3 flex justify-center items-center">
       {/* 3D Modern Interactive Brand Pedestal */}
       <div
         className="perspective-[1200px] select-none"
@@ -155,4 +155,3 @@ export const Header: React.FC<HeaderProps> = ({ onLogoClick }) => {
     </header>
   );
 };
-
