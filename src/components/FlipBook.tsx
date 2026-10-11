@@ -55,14 +55,10 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
     const [pageWidth, setPageWidth] = useState(isInitialPhone ? 190 : 400);
     const [pageHeight, setPageHeight] = useState(isInitialPhone ? 250 : 560);
     const [isPortraitMode, setIsPortraitMode] = useState(false);
-    // Dynamic horizontal offset percent to center single cover / back-cover pages on both mobile and desktop
-    // Starts at -25% so before opening the closed cover is immediately dead-center in the middle of the screen
     const [offsetPercent, setOffsetPercent] = useState<number>(-25);
 
-    // Total physical pages = 1 (Cover) + pages.length + 1 (Back Cover)
     const totalPhysicalPages = pages.length + 2;
 
-    // Helper to calculate exact centering offset for any given page
     const getTargetOffset = useCallback((page: number, isPort: boolean) => {
       if (isPort) return 0;
       if (page === 0) return -25;
@@ -70,22 +66,23 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
       return 0;
     }, [totalPhysicalPages]);
 
-    // Dynamic page fold depth tracking state & refs (0 = resting flat, 1 = maximum paper fold depth)
     const [foldDepth, setFoldDepth] = useState<number>(0);
     const foldAnimRef = useRef<number | null>(null);
     const foldStateRef = useRef<string>('read');
     const foldStartTimeRef = useRef<number>(0);
 
-    // Gilt edge glow state for user active page drag interaction
     const [isDragging, setIsDragging] = useState<boolean>(false);
     const [dragProgress, setDragProgress] = useState<number>(0);
     const [dragDirection, setDragDirection] = useState<'next' | 'prev'>('next');
     const dragStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-    // 3D Spatial Modern Zoom State (controlled exclusively from the bottom bar for all devices)
     const [internalZoom, setInternalZoom] = useState<number>(zoom || 1.0);
     const currentZoom = zoom !== undefined ? zoom : internalZoom;
     const zoomViewportRef = useRef<HTMLDivElement>(null);
+
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const isPanningRef = useRef(false);
+    const panStartRef = useRef({ x: 0, y: 0 });
 
     const handleZoomStep = useCallback(
       (delta: number) => {
@@ -101,14 +98,42 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
       onZoomChange?.(1.0);
     }, [onZoomChange]);
 
-    // Keep internal zoom synced with prop if prop changes
     useEffect(() => {
       if (zoom !== undefined && zoom !== internalZoom) {
         setInternalZoom(zoom);
       }
     }, [zoom, internalZoom]);
 
-    // Glowing CSS bloom drop-shadow state that pulses during page turns
+    useEffect(() => {
+      if (currentZoom <= 1.0) {
+        setPan({ x: 0, y: 0 });
+        isPanningRef.current = false;
+      }
+    }, [currentZoom]);
+
+    const handlePanStart = useCallback((e: React.PointerEvent) => {
+      if (currentZoom > 1.0) {
+        isPanningRef.current = true;
+        panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+        e.stopPropagation(); 
+      }
+    }, [currentZoom, pan]);
+
+    const handlePanMove = useCallback((e: React.PointerEvent) => {
+      if (isPanningRef.current && currentZoom > 1.0) {
+        setPan({ x: e.clientX - panStartRef.current.x, y: e.clientY - panStartRef.current.y });
+        e.stopPropagation();
+      }
+    }, [currentZoom]);
+
+    const handlePanEnd = useCallback((e: React.PointerEvent) => {
+      if (currentZoom > 1.0) {
+        isPanningRef.current = false;
+        setPan((prev) => ({ ...prev })); 
+        e.stopPropagation();
+      }
+    }, [currentZoom]);
+
     const [isBloomPulsing, setIsBloomPulsing] = useState<boolean>(false);
     const bloomPulseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -156,13 +181,12 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
         let targetDepth = 0;
 
         if (currentState === 'user_fold') {
-          // If user is actively dragging the fold, inspect shadow and flip controller progress
           try {
             const controller = (flip as any).getFlipController?.();
             const calc = controller?.calc;
             if (calc) {
               if (typeof calc.getFlippingProgress === 'function') {
-                const raw = calc.getFlippingProgress(); // 0 to 100
+                const raw = calc.getFlippingProgress(); 
                 const norm = Math.min(Math.max(raw / 100, 0.08), 1.0);
                 setDragProgress((prev) => Math.max(prev, norm));
               }
@@ -184,7 +208,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
             targetDepth = 0.75;
           }
         } else if (currentState === 'flipping') {
-          // Page flip animation runs for 650ms; fold curve peaks mid-turn
           const elapsed = now - foldStartTimeRef.current;
           const duration = 650;
           const t = Math.min(Math.max(elapsed / duration, 0), 1);
@@ -230,7 +253,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
       foldAnimRef.current = requestAnimationFrame(animate);
     }, []);
 
-    // Particle effect state for 3D flip interaction
     const [particleTrigger, setParticleTrigger] = useState<FlipParticleTrigger | null>(null);
     const lastFlipDirectionRef = useRef<'next' | 'prev'>('next');
     const lastParticleTimeRef = useRef<number>(0);
@@ -238,7 +260,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
     const triggerFlipParticles = useCallback((direction: 'next' | 'prev') => {
       lastFlipDirectionRef.current = direction;
       const now = Date.now();
-      // Throttle rapid triggers within 180ms
       if (now - lastParticleTimeRef.current < 180) return;
       lastParticleTimeRef.current = now;
       setParticleTrigger({
@@ -248,7 +269,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
       });
     }, []);
 
-    // Helper to flip forward safely
     const handleNext = useCallback(() => {
       setHasInteracted(true);
       triggerFlipParticles('next');
@@ -275,7 +295,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
       }
     }, [triggerFlipParticles, startFoldTracking, triggerBloomPulse, isPortraitMode]);
 
-    // Helper to flip backward safely
     const handlePrev = useCallback(() => {
       setHasInteracted(true);
       triggerFlipParticles('prev');
@@ -301,7 +320,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
       }
     }, [triggerFlipParticles, startFoldTracking, triggerBloomPulse, isPortraitMode, totalPhysicalPages]);
 
-    // Expose methods to parent via ref
     useImperativeHandle(
       ref,
       () => ({
@@ -319,9 +337,7 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
           if (pageFlipRef.current) {
             try {
               pageFlipRef.current.turnToPage(pageIndex);
-            } catch {
-              // fallback
-            }
+            } catch {}
           }
         },
         goToCover: () => {
@@ -336,9 +352,7 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
           if (pageFlipRef.current) {
             try {
               pageFlipRef.current.turnToPage(0);
-            } catch {
-              // fallback
-            }
+            } catch {}
           }
         },
         zoomIn: () => handleZoomStep(0.25),
@@ -349,20 +363,15 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
       [handleNext, handlePrev, triggerFlipParticles, startFoldTracking, triggerBloomPulse, handleResetZoom, handleZoomStep, getTargetOffset, isPortraitMode]
     );
 
-    // Build and initialize FlipBook with robust, deterministic dimensions
     const initFlipBook = useCallback(() => {
       if (!containerRef.current || !stagingRef.current) return;
 
       const hostContainer = containerRef.current;
-
-      // Measure viewport & parent available space
       const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 900;
       const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 700;
       const isMobilePhone = windowWidth < 640;
       const parentWidth = stageRef.current?.clientWidth || hostContainer.parentElement?.clientWidth || windowWidth;
 
-      // Single-page vertical ONLY if explicitly toggled via viewMode === 'single'
-      // By default (viewMode === 'spread'), the full 2-page spread appears even on mobile in portrait!
       const isPortrait = viewMode === 'single';
       setIsPortraitMode(isPortrait);
 
@@ -370,7 +379,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
       let calcH: number;
 
       if (isPortrait) {
-        // Single-page vertical presentation (3:4 aspect ratio = 0.75)
         const availWidth = Math.max(Math.min(parentWidth, windowWidth) - (isMobilePhone ? 12 : 32), 220);
         const availHeight = Math.max(windowHeight - (isMobilePhone ? 130 : 160), 300);
         const maxW = Math.min(availWidth, 680);
@@ -387,18 +395,14 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
         calcW = Math.max(180, Math.floor(Number(calcW)) || 320);
         calcH = Math.max(240, Math.floor(Number(calcH)) || 430);
       } else {
-        // Two-page spread presentation: Left & Right pages open side-by-side!
-        // On phone in portrait, the entire 2 pages fit seamlessly within the phone's screen width and height.
         const marginX = isMobilePhone ? 8 : 36;
         const availWidth = Math.max(Math.min(parentWidth, windowWidth) - marginX, 260);
         const availHeight = Math.max(windowHeight - (isMobilePhone ? 130 : 160), 220);
 
-        // Max spread width across 2 pages side-by-side
         const maxSpreadWidth = Math.min(availWidth, 1140);
         let pageW = Math.floor(maxSpreadWidth / 2);
         let pageH = Math.round(pageW / 0.75);
 
-        // If height exceeds available vertical space, scale to fit height
         if (pageH > availHeight) {
           pageH = availHeight;
           pageW = Math.round(pageH * 0.75);
@@ -411,18 +415,14 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
       setPageWidth(calcW);
       setPageHeight(calcH);
 
-      // Clean up any existing flip instance
       if (pageFlipRef.current) {
         try {
           pageFlipRef.current.destroy();
-        } catch {
-          // ignore
-        }
+        } catch {}
         pageFlipRef.current = null;
       }
       hostContainer.innerHTML = '';
 
-      // Create inner viewport element for PageFlip with appropriate width
       const bookEl = document.createElement('div');
       bookEl.className = 'flipbook-viewport';
       bookEl.style.width = isPortrait ? `${calcW}px` : `${calcW * 2}px`;
@@ -430,7 +430,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
       bookEl.style.position = 'relative';
       hostContainer.appendChild(bookEl);
 
-      // Track drag/click side from user pointer interactions to accurately orient the 3D particles
       const handleBookPointerDown = (e: MouseEvent | TouchEvent) => {
         const clientX = 'touches' in e && (e as TouchEvent).touches[0]
           ? (e as TouchEvent).touches[0].clientX
@@ -444,7 +443,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
       };
       bookEl.addEventListener('pointerdown', handleBookPointerDown as EventListener);
 
-      // Clone staging page elements
       const sourcePages = Array.from(stagingRef.current.children) as HTMLElement[];
       const isPhoneMode = calcW < 340 || isMobilePhone;
       const clonedPages = sourcePages.map((el) => {
@@ -461,7 +459,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
         return clone;
       });
 
-      // If phone mode, directly force compact micro-typography on directory page clone
       if (isPhoneMode) {
         clonedPages.forEach((pageEl) => {
           const titles = pageEl.querySelectorAll('[data-dir-item="title"]');
@@ -496,7 +493,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
         });
       }
 
-      // Add direct click handler on cloned cover to guarantee immediate responsive opening
       if (clonedPages.length > 0) {
         clonedPages[0].addEventListener('click', () => {
           if (pageFlipRef.current && pageFlipRef.current.getCurrentPageIndex() === 0) {
@@ -513,7 +509,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
         });
       }
 
-      // Add direct click handler on cloned back cover
       if (clonedPages.length > 1) {
         const lastPageEl = clonedPages[clonedPages.length - 1];
         lastPageEl.addEventListener('click', () => {
@@ -535,7 +530,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
         });
       }
 
-      // Add direct click handlers for any interactive jump buttons (e.g. Menu Directory items)
       clonedPages.forEach((pageEl) => {
         const jumpButtons = pageEl.querySelectorAll('[data-jump-to-page]');
         jumpButtons.forEach((btn) => {
@@ -548,15 +542,12 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
               setOffsetPercent(getTargetOffset(targetPage, isPortrait));
               try {
                 pageFlipRef.current.turnToPage(targetPage);
-              } catch (err) {
-                console.error('Failed to flip to page', targetPage, err);
-              }
+              } catch {}
             }
           });
         });
       });
 
-      // Delegated click handler on bookEl for jump-to-page elements
       bookEl.addEventListener('click', (e) => {
         const target = (e.target as HTMLElement).closest('[data-jump-to-page]');
         if (target && pageFlipRef.current) {
@@ -567,9 +558,7 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
             setOffsetPercent(getTargetOffset(targetPage, isPortrait));
             try {
               pageFlipRef.current.turnToPage(targetPage);
-            } catch (err) {
-              console.error('Failed to turn to page', targetPage, err);
-            }
+            } catch {}
           }
         }
       });
@@ -607,15 +596,12 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
         });
 
         pageFlipInstance.on('changeState', (e: { data: string }) => {
-          // Track fold depth to dynamically deepen inner edge shadows
           startFoldTracking(e.data);
 
-          // When state transitions into 'flipping' or 'user_fold', the physical page lift / animation starts immediately
           if (e.data === 'flipping' || e.data === 'user_fold') {
             pageFlipAudio.playPageTurn();
             triggerFlipParticles(lastFlipDirectionRef.current);
 
-            // Anticipate target spread position during fold/flip
             const cur = pageFlipInstance.getCurrentPageIndex();
             if (!isPortrait) {
               if (cur === 0 && lastFlipDirectionRef.current === 'next') {
@@ -629,7 +615,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
               }
             }
           } else if (e.data === 'read') {
-            // Settle into exact resting position when page animation completes or fold released
             const cur = pageFlipInstance.getCurrentPageIndex();
             setOffsetPercent(getTargetOffset(cur, isPortrait));
           }
@@ -647,7 +632,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
           currentPageRef.current = newPage;
           setOffsetPercent(getTargetOffset(newPage, isPortrait));
           setHasInteracted(true);
-          // Safety fallback: if not already triggered at animation onset, playPageTurn & particles (debounced)
           pageFlipAudio.playPageTurn();
           triggerFlipParticles(lastFlipDirectionRef.current);
           triggerBloomPulse(750);
@@ -664,31 +648,24 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
           onOrientationChangeRef.current?.(isPort);
         });
 
-        // Load pages into PageFlip
         pageFlipInstance.loadFromHTML(clonedPages);
         pageFlipRef.current = pageFlipInstance;
 
-        // Restore target page
         if (currentPageRef.current > 0) {
           try {
             pageFlipInstance.turnToPage(currentPageRef.current);
-          } catch {
-            // ignore
-          }
+          } catch {}
         }
       } catch (err) {
-        console.error('Failed to initialize PageFlip:', err);
         setIsLoaded(true);
       }
     }, [pages, settings, totalPhysicalPages, viewMode, triggerFlipParticles, startFoldTracking, triggerBloomPulse, getTargetOffset]);
 
     useEffect(() => {
-      // Delay slightly for initial layout stability
       const timer = setTimeout(() => {
         initFlipBook();
       }, 50);
 
-      // Resize & orientation listener: re-init if window dimensions change noticeably
       let resizeTimer: NodeJS.Timeout;
       let lastWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
       let lastHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
@@ -723,15 +700,12 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
         if (pageFlipRef.current) {
           try {
             pageFlipRef.current.destroy();
-          } catch {
-            // ignore
-          }
+          } catch {}
           pageFlipRef.current = null;
         }
       };
     }, [initFlipBook]);
 
-    // Track active page dragging continuously to sync gilt edge glow intensity via Framer Motion
     useEffect(() => {
       const handleWindowPointerMove = (e: MouseEvent | TouchEvent) => {
         if (foldStateRef.current === 'user_fold') {
@@ -770,7 +744,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
         ref={stageRef}
         className="relative w-full flex flex-col items-center justify-center my-auto"
       >
-        {/* Render offscreen so React mounts elements with real dimensions before cloning */}
         <div
           ref={stagingRef}
           aria-hidden="true"
@@ -785,10 +758,8 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
             overflow: 'hidden',
           }}
         >
-          {/* Page 0: Front Cover */}
           <PageCover onOpenClick={handleNext} showHint={!hasInteracted} />
 
-          {/* Interior Pages: 1 to N */}
           {pages.map((p, idx) => (
             <PageInside
               key={p.pageNumber || idx}
@@ -796,11 +767,9 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
               isLeftPage={idx % 2 === 0}
               currencySymbol={settings.currencySymbol}
               isSinglePage={isPortraitMode}
-              isMobile={isInitialPhone || pageWidth < 350 || isPortraitMode}
             />
           ))}
 
-          {/* Page N+1: Back Cover */}
           <PageBackCover
             settings={settings}
             onReturnToCover={() => {
@@ -810,25 +779,28 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
           />
         </div>
 
-        {/* 3D Spatial Modern Zoom Viewport */}
+        {/* 3D Spatial Modern Zoom Viewport WITH MOBILE DRAG/PAN SUPPORT */}
         <div
           ref={zoomViewportRef}
           className="relative w-full flex items-center justify-center"
           style={{
             perspective: '2400px',
             transformStyle: 'preserve-3d',
+            touchAction: currentZoom > 1.0 ? 'none' : 'auto', 
           }}
+          onPointerDownCapture={handlePanStart}
+          onPointerMoveCapture={handlePanMove}
+          onPointerUpCapture={handlePanEnd}
+          onPointerCancelCapture={handlePanEnd}
         >
-          {/* 3D Camera Transformed Stage: Dolly in Z and Scale */}
           <div
             className="relative flex items-center justify-center will-change-transform"
             style={{
-              transform: `translateZ(${(currentZoom - 1) * 120}px) scale3d(${currentZoom}, ${currentZoom}, 1)`,
+              transform: `translate3d(${pan.x}px, ${pan.y}px, ${(currentZoom - 1) * 120}px) scale3d(${currentZoom}, ${currentZoom}, 1)`,
               transformStyle: 'preserve-3d',
-              transition: 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+              transition: isPanningRef.current ? 'none' : 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1)',
             }}
           >
-            {/* 3D Physical Book Arena - dynamically centered in viewport for both phone and normal screen */}
             <div
               className="relative flex items-center justify-center mx-auto py-1 px-0 sm:px-2 max-w-full"
               style={{
@@ -838,7 +810,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
                 willChange: 'transform',
               }}
             >
-              {/* Ambient Wood Table Drop Shadow & Warm Glow positioned under active visible pages */}
               <div
                 className="absolute bottom-0 top-6 bg-black/60 blur-3xl rounded-3xl pointer-events-none -z-10 transition-all duration-650 ease-out"
                 style={
@@ -850,10 +821,8 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
                 }
               />
 
-              {/* Physical Stacked Page Edges (shown on tablet and desktop when book is open in landscape) */}
               {currentPage > 0 && currentPage < totalPhysicalPages - 1 && !isPortraitMode && (
                 <div className="hidden sm:block">
-                  {/* Left page stack thickness */}
                   <div
                     className="absolute top-1/2 -translate-y-1/2 w-3.5 h-[96%] bg-[#e0d3c1] rounded-l-xs border-l border-y border-[#ab957f]/50 pointer-events-none -z-10 shadow-md"
                     style={{
@@ -862,7 +831,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
                         'repeating-linear-gradient(to bottom, #d4c4b0 0px, #d4c4b0 1px, #f2e9dc 1px, #f2e9dc 3px)',
                     }}
                   />
-                  {/* Right page stack thickness */}
                   <div
                     className="absolute top-1/2 -translate-y-1/2 w-3.5 h-[96%] bg-[#e0d3c1] rounded-r-xs border-r border-y border-[#ab957f]/50 pointer-events-none -z-10 shadow-md"
                     style={{
@@ -874,21 +842,18 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
                 </div>
               )}
 
-              {/* Prominent Floating Left Page Turn Button */}
               {currentPage > 0 && (
                 <button
                   onClick={handlePrev}
                   aria-label="Previous Page"
                   title="Previous Page (Left Arrow)"
-                  className="flex absolute left-0 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-11 sm:h-11 items-center justify-center rounded-full bg-[#1c1715]/90 hover:bg-[#c49752] text-[#e8dfd5] hover:text-[#120f0e] border border-[#c49752]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer group"
+                  className="hidden md:flex absolute left-0 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-11 sm:h-11 items-center justify-center rounded-full bg-[#1c1715]/90 hover:bg-[#c49752] text-[#e8dfd5] hover:text-[#120f0e] border border-[#c49752]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer group"
                 >
                   <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-0.5 transition-transform" />
                 </button>
               )}
 
-              {/* Mount Container & 3D Particles for PageFlip */}
               <div className="relative flex justify-center items-center">
-                {/* Mount Container for PageFlip with luxury glowing CSS bloom drop-shadow */}
                 <div
                   ref={containerRef}
                   className={`select-none flex justify-center items-center relative z-10 ${
@@ -900,7 +865,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
                   }}
                 />
 
-                {/* Soft, Dynamic Inner Edge Drop Shadow on central gutter spine that deepens as page folds */}
                 {currentPage > 0 && currentPage < totalPhysicalPages - 1 && !isPortraitMode && (
                   <div
                     className="absolute inset-y-0 left-1/2 -translate-x-1/2 pointer-events-none z-25 flex items-center justify-center transition-all duration-100 ease-out"
@@ -909,7 +873,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
                       height: `${pageHeight}px`,
                     }}
                   >
-                    {/* Left Page Inner Edge Drop Shadow */}
                     <div
                       className="w-1/2 h-full pointer-events-none transition-opacity duration-100"
                       style={{
@@ -920,7 +883,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
                           transparent 100%)`,
                       }}
                     />
-                    {/* Right Page Inner Edge Drop Shadow */}
                     <div
                       className="w-1/2 h-full pointer-events-none transition-opacity duration-100"
                       style={{
@@ -931,7 +893,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
                           transparent 100%)`,
                       }}
                     />
-                    {/* Deep Binding Slit Contact Crease */}
                     <div
                       className="absolute inset-y-0 w-[1.5px] bg-[#0c0806] pointer-events-none"
                       style={{
@@ -942,7 +903,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
                   </div>
                 )}
 
-                {/* Subtle 3D Edge Particle Effect during Page Flip Animation */}
                 <PageFlipParticles
                   trigger={particleTrigger}
                   bookWidth={isPortraitMode ? pageWidth : pageWidth * 2}
@@ -950,7 +910,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
                   isPortrait={isPortraitMode}
                 />
 
-                {/* Subtle, animated gold 'gilt' edge glow effect during active page dragging */}
                 <GiltEdgeGlow
                   isDragging={isDragging}
                   dragProgress={dragProgress}
@@ -961,13 +920,12 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
                 />
               </div>
 
-              {/* Prominent Floating Right Page Turn Button */}
               {currentPage < totalPhysicalPages - 1 && (
                 <button
                   onClick={handleNext}
                   aria-label="Next Page"
                   title="Next Page (Right Arrow)"
-                  className="flex absolute right-0 sm:-right-12 md:-right-16 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-11 sm:h-11 items-center justify-center rounded-full bg-[#1c1715]/90 hover:bg-[#c49752] text-[#e8dfd5] hover:text-[#120f0e] border border-[#c49752]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer group"
+                  className="hidden md:flex absolute right-0 sm:-right-12 md:-right-16 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-11 sm:h-11 items-center justify-center rounded-full bg-[#1c1715]/90 hover:bg-[#c49752] text-[#e8dfd5] hover:text-[#120f0e] border border-[#c49752]/40 shadow-[0_4px_20px_rgba(0,0,0,0.8)] backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer group"
                 >
                   <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-0.5 transition-transform" />
                 </button>
@@ -976,7 +934,6 @@ export const FlipBook = forwardRef<FlipBookHandle, FlipBookProps>(
           </div>
         </div>
 
-        {/* Loading Indicator before book initializes */}
         {!isLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#141110]/80 backdrop-blur-sm z-40">
             <div className="flex flex-col items-center gap-3 text-center">

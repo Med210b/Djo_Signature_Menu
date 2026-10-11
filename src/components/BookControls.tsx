@@ -18,8 +18,8 @@ import {
 } from 'lucide-react';
 
 interface BookControlsProps {
-  currentPage: number; // 0 is front cover
-  totalPages: number; // total pages in flipbook
+  currentPage: number; 
+  totalPages: number; 
   onPrev: () => void;
   onNext: () => void;
   onGoToCover: () => void;
@@ -61,7 +61,6 @@ export const BookControls: React.FC<BookControlsProps> = ({
   onZoomOut,
   onResetZoom,
 }) => {
-  // Format page display label
   const getPageLabel = () => {
     if (currentPage === 0) return 'Cover';
     if (currentPage >= totalPages - 1) return 'Back';
@@ -70,7 +69,6 @@ export const BookControls: React.FC<BookControlsProps> = ({
       return `p. ${currentPage} / ${totalPages - 2}`;
     }
 
-    // In 2-page landscape spread:
     const leftPageNum = currentPage % 2 === 1 ? currentPage : currentPage - 1;
     const rightPageNum = leftPageNum + 1;
     const maxInterior = totalPages - 2;
@@ -86,9 +84,8 @@ export const BookControls: React.FC<BookControlsProps> = ({
 
   return (
     <nav aria-label="Book navigation" className="relative z-30 flex flex-col items-center gap-1 sm:gap-2 max-w-full">
-      {/* Central Floating Control Bar - Transparent, smaller and lower on phone; luxury opaque on web */}
       <div className="flex items-center gap-0.5 sm:gap-2 px-1.5 sm:px-4 py-1 sm:py-2 rounded-full bg-black/30 sm:bg-[#1b1715]/90 backdrop-blur-sm sm:backdrop-blur-md border border-[#c49752]/15 sm:border-[#c49752]/25 shadow-none sm:shadow-[0_10px_30px_rgba(0,0,0,0.6)] text-[#e2d5c5] max-w-[calc(100vw-8px)] sm:max-w-[calc(100vw-16px)] overflow-x-auto scrollbar-none scale-[0.92] sm:scale-100 origin-bottom">
-        {/* Return to Cover */}
+        
         <button
           onClick={onGoToCover}
           disabled={isAtStart}
@@ -101,7 +98,6 @@ export const BookControls: React.FC<BookControlsProps> = ({
 
         <span className="hidden sm:block w-[1px] h-4 bg-[#c49752]/20" />
 
-        {/* Previous Page Button */}
         <button
           onClick={onPrev}
           disabled={isAtStart}
@@ -112,7 +108,6 @@ export const BookControls: React.FC<BookControlsProps> = ({
           <ChevronLeft className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
         </button>
 
-        {/* Current Page Counter & Quick Jump Trigger */}
         <button
           onClick={onOpenToc}
           title="View Table of Contents"
@@ -124,7 +119,6 @@ export const BookControls: React.FC<BookControlsProps> = ({
           </span>
         </button>
 
-        {/* Next Page Button */}
         <button
           onClick={onNext}
           disabled={isAtEnd}
@@ -137,7 +131,6 @@ export const BookControls: React.FC<BookControlsProps> = ({
 
         <span className="w-[1px] h-3.5 sm:h-4 bg-[#c49752]/20 shrink-0" />
 
-        {/* Modern 3D Zoom Controls - Immediately accessible on both phone and desktop */}
         {onZoomIn && onZoomOut && (
           <div className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 rounded-full bg-black/20 sm:bg-black/40 border border-[#c49752]/15 sm:border-[#c49752]/25 shrink-0 shadow-none sm:shadow-inner">
             <button
@@ -172,7 +165,6 @@ export const BookControls: React.FC<BookControlsProps> = ({
 
         <span className="hidden sm:block w-[1px] h-4 bg-[#c49752]/20" />
 
-        {/* Table of Contents Button */}
         <button
           onClick={onOpenToc}
           title="Table of Contents"
@@ -181,7 +173,6 @@ export const BookControls: React.FC<BookControlsProps> = ({
           <List className="w-3 h-3 sm:w-4 sm:h-4" />
         </button>
 
-        {/* Sound & Ambient Lounge Jazz Volume Controls */}
         <div className="flex items-center gap-0.5 sm:gap-1.5 px-1 sm:px-2 py-0.5 rounded-full bg-black/20 sm:bg-black/40 border border-[#c49752]/15 sm:border-[#c49752]/20 shrink-0">
           <button
             onClick={onToggleSound}
@@ -200,7 +191,6 @@ export const BookControls: React.FC<BookControlsProps> = ({
             )}
           </button>
 
-          {/* Lounge Jazz Ambient Track Volume Slider */}
           <div className="flex items-center gap-0.5 sm:gap-1.5" title="Ambient Lounge Jazz Volume">
             <Music className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#c49752]/70 hidden md:block shrink-0" />
             <input
@@ -228,7 +218,6 @@ export const BookControls: React.FC<BookControlsProps> = ({
           </div>
         </div>
 
-        {/* View Mode Toggle: 2 Pages Landscape vs 1 Page Vertical */}
         {onToggleViewMode && (
           <button
             onClick={onToggleViewMode}
@@ -249,7 +238,6 @@ export const BookControls: React.FC<BookControlsProps> = ({
           </button>
         )}
 
-        {/* Fullscreen Button */}
         <button
           onClick={onToggleFullscreen}
           title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
@@ -263,8 +251,7 @@ export const BookControls: React.FC<BookControlsProps> = ({
         </button>
       </div>
 
-      {/* Subtle Hint Text on First Load - Hidden on mobile screens to keep bar low and non-intrusive */}
-      <div className="hidden sm:block text-[10px] sm:text-[11px] font-serif text-[#a89885] tracking-widest uppercase opacity-75 text-center px-2">
+      <div className="hidden md:block text-[10px] sm:text-[11px] font-serif text-[#a89885] tracking-widest uppercase opacity-75 text-center px-2">
         Click or drag pages to flip · Use +/- in bar to zoom · Arrow keys to navigate
       </div>
     </nav>
