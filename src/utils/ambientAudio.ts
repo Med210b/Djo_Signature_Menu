@@ -49,18 +49,37 @@ export class AmbientAudioEngine {
   constructor() {
     if (typeof window !== 'undefined') {
       const unlockAudio = () => {
-        this.initContext();
-        window.removeEventListener('pointerdown', unlockAudio);
-        window.removeEventListener('keydown', unlockAudio);
-        window.removeEventListener('touchstart', unlockAudio);
-        window.removeEventListener('touchend', unlockAudio);
-        window.removeEventListener('click', unlockAudio);
+        const ctx = this.initContext();
+        if (ctx) {
+          if (ctx.state === 'suspended') {
+            ctx.resume().catch(() => {});
+          }
+          // The Silent Oscillator Hack: Force Android/iOS to unlock audio hardware
+          try {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            gain.gain.value = 0; // completely silent
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(0);
+            osc.stop(ctx.currentTime + 0.01);
+          } catch (e) {
+            // Ignore if already playing
+          }
+        }
+        window.removeEventListener('pointerdown', unlockAudio, true);
+        window.removeEventListener('keydown', unlockAudio, true);
+        window.removeEventListener('touchstart', unlockAudio, true);
+        window.removeEventListener('touchend', unlockAudio, true);
+        window.removeEventListener('click', unlockAudio, true);
       };
-      window.addEventListener('pointerdown', unlockAudio, { passive: true, once: true });
-      window.addEventListener('keydown', unlockAudio, { passive: true, once: true });
-      window.addEventListener('touchstart', unlockAudio, { passive: true, once: true });
-      window.addEventListener('touchend', unlockAudio, { passive: true, once: true });
-      window.addEventListener('click', unlockAudio, { passive: true, once: true });
+      
+      // Use capture: true to ensure it runs before React can block it
+      window.addEventListener('pointerdown', unlockAudio, { passive: true, once: true, capture: true });
+      window.addEventListener('keydown', unlockAudio, { passive: true, once: true, capture: true });
+      window.addEventListener('touchstart', unlockAudio, { passive: true, once: true, capture: true });
+      window.addEventListener('touchend', unlockAudio, { passive: true, once: true, capture: true });
+      window.addEventListener('click', unlockAudio, { passive: true, once: true, capture: true });
     }
   }
 
@@ -113,6 +132,14 @@ export class AmbientAudioEngine {
       data[i] = (Math.random() * 2 - 1) * 0.5;
     }
     return buffer;
+  }
+
+  public unlock() {
+      // Manual trigger exposed for App.tsx
+      const ctx = this.initContext();
+      if (ctx && ctx.state === 'suspended') {
+          ctx.resume().catch(() => {});
+      }
   }
 
   private playRhodesNote(freq: number, time: number, duration: number, velocity: number = 0.6) {
