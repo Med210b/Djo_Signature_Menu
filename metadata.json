@@ -1,0 +1,6 @@
+{
+  "name": "Interactive 3D Flipbook Menu",
+  "description": "A luxury interactive digital flipbook menu with realistic 3D page turning, rococo parchment aesthetic, and responsive presentation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

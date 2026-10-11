@@ -1,0 +1,271 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-cinzel: 'Cinzel', serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-carrera: 'carrera script', 'Carrera Script', 'Alex Brush', 'Great Vibes', 'Allura', cursive;
+  --font-gormorant: 'gormorant gormorand', 'Cormorant Garamond', Georgia, serif;
+  --font-ahsing: 'Ahsing', 'Rozha One', 'Abril Fatface', 'Playfair Display', serif;
+  --font-times: 'times new romant', 'Times New Roman', Times, serif;
+  --font-canva: 'canva sans', 'Canva Sans', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* Specific Font Families from User Canva Specification */
+.font-carrera-script {
+  font-family: 'carrera script', 'Carrera Script', 'Alex Brush', 'Great Vibes', 'Allura', cursive !important;
+}
+
+.font-gormorant {
+  font-family: 'gormorant gormorand', 'Cormorant Garamond', Georgia, serif !important;
+}
+
+.font-ahsing {
+  font-family: 'Ahsing', 'Chonburi', 'Rozha One', 'Yeseva One', 'Abril Fatface', 'Playfair Display', serif !important;
+}
+
+.font-times-roman {
+  font-family: 'times new romant', 'Times New Roman', Times, 'Cormorant Garamond', serif !important;
+}
+
+.font-canva-sans {
+  font-family: 'canva sans', 'Canva Sans', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+}
+
+/* Container query support for pixel-accurate proportional scaling */
+.page-inside {
+  container-type: inline-size;
+}
+
+/* Phone & Web Responsive Typography for Menu Directory Page */
+.page-phone-mode .menu-dir-item-title,
+.menu-dir-phone-title {
+  font-size: 6.5px !important;
+  font-weight: 500 !important;
+  color: #2c211b !important;
+  line-height: 1.25 !important;
+  text-shadow: none !important;
+}
+
+.page-phone-mode .menu-dir-item-page,
+.menu-dir-phone-page {
+  font-size: 6.5px !important;
+  font-weight: 600 !important;
+  color: #975f31 !important;
+  line-height: 1.25 !important;
+  text-shadow: none !important;
+}
+
+.page-phone-mode .menu-dir-dots,
+.menu-dir-phone-dots {
+  border-color: rgba(151, 95, 49, 0.3) !important;
+  margin-bottom: 2px !important;
+}
+
+.page-phone-mode .menu-dir-title,
+.menu-dir-phone-heading {
+  font-size: 10px !important;
+  line-height: 1.15 !important;
+}
+
+.page-phone-mode .menu-dir-sub,
+.menu-dir-phone-subtitle {
+  font-size: 6px !important;
+  line-height: 1.2 !important;
+}
+
+/* Base Directory Item styling for Web */
+.menu-dir-item-title {
+  font-size: clamp(10px, 2.35cqi, 18px);
+  font-weight: 700;
+  color: #2a1a11;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.menu-dir-item-page {
+  font-size: clamp(9px, 2.15cqi, 16px);
+  font-weight: 700;
+  color: #834f23;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.menu-dir-dots {
+  border-color: rgba(157, 119, 74, 0.6);
+  margin-bottom: 4px;
+}
+
+@media (max-width: 767px) {
+  .menu-dir-item-title {
+    font-size: 6.5px !important;
+    font-weight: 500 !important;
+    color: #2c211b !important;
+    text-shadow: none !important;
+    line-height: 1.25 !important;
+  }
+  .menu-dir-item-page {
+    font-size: 6.5px !important;
+    font-weight: 600 !important;
+    color: #975f31 !important;
+    text-shadow: none !important;
+    line-height: 1.25 !important;
+  }
+  .menu-dir-dots {
+    border-color: rgba(151, 95, 49, 0.3) !important;
+    margin-bottom: 2px !important;
+  }
+}
+
+/* PageFlip styling enhancements for physical realism */
+:root {
+  --fold-depth: 0;
+  --inner-edge-shadow-opacity: 0.26;
+  --inner-edge-shadow-width: 28px;
+  --inner-edge-ambient-width: 52px;
+}
+
+.flipbook-viewport {
+  margin: 0 auto;
+  perspective: 2400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.stf__parent {
+  margin: 0 auto !important;
+}
+
+.stf__wrapper {
+  margin: 0 auto;
+  border-radius: 2px;
+}
+
+.stf__item {
+  background-color: #f5ebe0;
+  overflow: hidden;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* Enhanced 3D drop shadow dynamics during page folding */
+.stf__innerShadow {
+  pointer-events: none !important;
+  mix-blend-mode: multiply !important;
+  filter: drop-shadow(0 0 14px rgba(0, 0, 0, 0.5)) !important;
+}
+
+.stf__hardInnerShadow {
+  pointer-events: none !important;
+  mix-blend-mode: multiply !important;
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.55)) !important;
+}
+
+.stf__outerShadow {
+  pointer-events: none !important;
+  mix-blend-mode: multiply !important;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.6)) !important;
+}
+
+.inner-edge-fold-shadow,
+.inner-edge-ambient-shadow {
+  will-change: width, background, opacity;
+}
+
+/* Soft, Glowing CSS Bloom Effect (using filter: drop-shadow) on FlipBook Container */
+.flipbook-bloom-resting {
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.42))
+          drop-shadow(0 0 18px rgba(212, 160, 50, 0.18))
+          drop-shadow(0 0 42px rgba(196, 151, 82, 0.09));
+  transition: filter 500ms cubic-bezier(0.33, 1, 0.68, 1);
+  will-change: filter;
+}
+
+.flipbook-bloom-pulse {
+  animation: luxury-bloom-pulse 1.35s ease-in-out infinite;
+  will-change: filter;
+}
+
+@keyframes luxury-bloom-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.44))
+            drop-shadow(0 0 20px rgba(212, 160, 50, 0.22))
+            drop-shadow(0 0 44px rgba(196, 151, 82, 0.12));
+  }
+  50% {
+    filter: drop-shadow(0 14px 34px rgba(0, 0, 0, 0.55))
+            drop-shadow(0 0 34px rgba(245, 197, 85, 0.46))
+            drop-shadow(0 0 68px rgba(212, 160, 50, 0.30))
+            drop-shadow(0 0 105px rgba(180, 130, 30, 0.15));
+  }
+}
+
+/* Custom refined scrollbar for modals */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(196, 151, 82, 0.35);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(196, 151, 82, 0.6);
+}
+
+/* Phone rotation animation for mobile landscape prompt */
+@keyframes phone-rotate {
+  0%, 15% {
+    transform: rotate(0deg);
+  }
+  45%, 75% {
+    transform: rotate(-90deg);
+  }
+  95%, 100% {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-phone-rotate {
+  animation: phone-rotate 2.6s ease-in-out infinite;
+}
+
+/* Luxury Gold Range Slider */
+input[type='range'].gold-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f3c969;
+  border: 1.5px solid #1a1512;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6), 0 0 6px rgba(196, 151, 82, 0.7);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type='range'].gold-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  background: #fff0c2;
+}
+
+input[type='range'].gold-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f3c969;
+  border: 1.5px solid #1a1512;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6), 0 0 6px rgba(196, 151, 82, 0.7);
+  cursor: pointer;
+}
