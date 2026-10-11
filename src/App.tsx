@@ -7,7 +7,6 @@ import { Hero3DBackground } from './components/Hero3DBackground';
 import { initialMenuCategories, initialMenuSettings } from './data/menuData';
 import { generateMenuPages } from './utils/pagination';
 import { pageFlipAudio } from './utils/audio';
-import { ambientAudio } from './utils/ambientAudio';
 
 export default function App() {
   const [categories] = useState(initialMenuCategories);
@@ -32,27 +31,15 @@ export default function App() {
     const nextMuted = !isSoundMuted;
     setIsSoundMuted(nextMuted);
     pageFlipAudio.setMuted(nextMuted);
-    ambientAudio.setMuted(nextMuted);
-    if (!nextMuted && musicVolume > 0) ambientAudio.start();
   };
 
   const handleVolumeChange = (newVolume: number) => {
     setMusicVolume(newVolume);
-    ambientAudio.setVolume(newVolume);
     if (newVolume > 0) {
       if (isSoundMuted) {
         setIsSoundMuted(false);
         pageFlipAudio.setMuted(false);
-        ambientAudio.setMuted(false);
       }
-      ambientAudio.start();
-    }
-  };
-
-  // Aggressively force audio to start on any screen touch
-  const forceStartAudio = () => {
-    if (!isSoundMuted && musicVolume > 0 && !ambientAudio.getIsPlaying()) {
-      ambientAudio.start();
     }
   };
 
@@ -75,7 +62,6 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
-      forceStartAudio(); // ensure keyboard forces audio too
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); flipBookRef.current?.flipNext(); }
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); flipBookRef.current?.flipPrev(); }
       else if (e.key === 'Home') { e.preventDefault(); setViewMode('spread'); flipBookRef.current?.goToCover(); }
@@ -95,12 +81,7 @@ export default function App() {
   };
 
   return (
-    <div 
-      className="h-[100dvh] flex flex-col bg-transparent text-[#e8dfd5] relative overflow-hidden selection:bg-[#c49752]/30 selection:text-[#fff4e0]"
-      onClick={forceStartAudio}
-      onTouchStart={forceStartAudio}
-      onPointerDown={forceStartAudio}
-    >
+    <div className="h-[100dvh] flex flex-col bg-transparent text-[#e8dfd5] relative overflow-hidden selection:bg-[#c49752]/30 selection:text-[#fff4e0]">
       <Hero3DBackground />
 
       <div className="shrink-0 w-full z-30 mt-[12vh] sm:mt-0 sm:pt-3">
